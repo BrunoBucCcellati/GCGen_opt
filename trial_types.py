@@ -6,5 +6,4 @@ class Trial:
     index: int
     value: float
     feasible: bool
-    constraint_values: tuple[float, ...]
     level_coordinate: float | None = None
