@@ -72,7 +72,7 @@ class StronginMultistepOptimizer:
     def solve(self, problem: OptimizationProblem) -> SolverResult:
         self._last_accuracy = float("inf")
         self._stats = SearchStatistics(problem, self.par.max_function_trials)
-        self._lipschitz = LipschitzBook(reliability=self.par.reliability, M=self.par.initial_lipschitz)
+        self._lipschitz = LipschitzBook(M=self.par.initial_lipschitz)
         self._optimize_level(0, ())
         best = self._stats.best_feasible or self._stats.best_indexed
         return SolverResult(
@@ -87,7 +87,7 @@ class StronginMultistepOptimizer:
 
     def _optimize_level(self, level: int, prefix: tuple[float, ...]) -> Trial:
         low, high = self._stats.problem.bounds_for(level)
-        queue = IntervalQueue(self._lipschitz)
+        queue = IntervalQueue(self._lipschitz, self.par.reliability)  
         left = self._evaluate_level_point(level, prefix, low)
         right = self._evaluate_level_point(level, prefix, high)
         best = left if is_better_indexed(left, right) else right
@@ -102,7 +102,7 @@ class StronginMultistepOptimizer:
             if interval.width <= self.par.eps:
                 self._last_accuracy = min(self._last_accuracy, interval.width)
                 break
-            x_new = interval.next_coordinate(self._lipschitz)
+            x_new = interval.next_coordinate(self._lipschitz, self.par.reliability) 
             trial = self._evaluate_level_point(level, prefix, x_new)
             if is_better_indexed(trial, best):
                 best = trial
