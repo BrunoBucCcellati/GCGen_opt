@@ -9,7 +9,6 @@ from trial_types import Trial
 
 @dataclass
 class LipschitzBook:
-    reliability: float = 2.5
     M: float = 1.0
     best_feasible_value: float = float("inf")
     revision: int = 0
@@ -33,9 +32,8 @@ class LipschitzBook:
             return True
         return False
 
-    @property
-    def working_m(self) -> float:
-        return self.reliability * self.M
+    def working_m(self, r: float) -> float:
+        return r * self.M
 
 
 class SearchInterval:
@@ -62,8 +60,8 @@ class SearchInterval:
         diff = abs(lipschitz.z_value(self.right) - lipschitz.z_value(self.left))
         return diff / self.width
 
-    def recompute_characteristic(self, lipschitz: LipschitzBook) -> float:
-        m = lipschitz.working_m
+    def recompute_characteristic(self, lipschitz: LipschitzBook, r: float) -> float:
+        m = lipschitz.working_m(r)
         d = self.width
         z_l = lipschitz.z_value(self.left)
         z_r = lipschitz.z_value(self.right)
@@ -77,8 +75,8 @@ class SearchInterval:
             self.characteristic = 2.0 * m * d - 4.0 * z_l
         return self.characteristic
 
-    def next_coordinate(self, lipschitz: LipschitzBook) -> float:
-        m = lipschitz.working_m
+    def next_coordinate(self, lipschitz: LipschitzBook, r: float) -> float:
+        m = lipschitz.working_m(r)
         mid = 0.5 * (self.a + self.b)
 
         if self.left.index == self.right.index:
@@ -94,25 +92,26 @@ class SearchInterval:
 
 
 class IntervalQueue:
-    def __init__(self, lipschitz: LipschitzBook) -> None:
+    def __init__(self, lipschitz: LipschitzBook, r: float):
         self._heap = []
         self._counter = itertools.count()
         self._revision = lipschitz.revision
         self.lipschitz = lipschitz
+        self._r = r
 
     def push(self, interval: SearchInterval) -> None:
         cand = interval.local_lipschitz_candidate(self.lipschitz)
         if cand is not None:
             self.lipschitz.update_M(cand)
-        r = interval.recompute_characteristic(self.lipschitz)
-        heapq.heappush(self._heap, (-r, next(self._counter), interval))
+        r_val = interval.recompute_characteristic(self.lipschitz, self._r)
+        heapq.heappush(self._heap, (-r_val, next(self._counter), interval))
 
     def actualize(self) -> None:
         if self._revision != self.lipschitz.revision:
             new_heap = []
             for _, _, interval in self._heap:
-                r = interval.recompute_characteristic(self.lipschitz)
-                heapq.heappush(new_heap, (-r, next(self._counter), interval))
+                r_val = interval.recompute_characteristic(self.lipschitz, self._r)
+                heapq.heappush(new_heap, (-r_val, next(self._counter), interval))
             self._heap = new_heap
             self._revision = self.lipschitz.revision
 
