@@ -63,12 +63,10 @@ class OptimizationProblem:
                     index=i,
                     value=val,
                     feasible=False,
-                    constraint_values=tuple(values),
                 )
         return Trial(
             x=tuple(x),
             index=self.objective_index,
             value=float(self.objective(x)),
             feasible=True,
-            constraint_values=tuple(values),
         )
