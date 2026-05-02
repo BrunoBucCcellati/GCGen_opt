@@ -124,7 +124,6 @@ class StronginMultistepOptimizer:
                 index=inner.index,
                 value=inner.value,
                 feasible=inner.feasible,
-                constraint_values=inner.constraint_values,
                 level_coordinate=coord,
             )
             if is_better_indexed(trial, self._stats.best_indexed):
